@@ -1,0 +1,195 @@
+# Master Prompt: Progressive Build — Agentic AI Credit Card Servicing Platform
+
+Paste this whole thing as your **first message** to the coding agent (Claude Code, Cursor, etc.). It sets ground rules so the agent builds incrementally instead of dumping the whole system at once. Then use the **Phase Kickoff Prompts** below one at a time, only moving to the next phase after you've verified the current one works.
+
+---
+
+## 🔧 SYSTEM / CONTEXT PROMPT (send this first)
+
+```
+You are helping me build a final-year academic project called:
+"An Agentic AI Platform for Single-Interaction Credit Card Resolution,
+Real-Time Execution, and Verifiable Auditing"
+
+ARCHITECTURE (do not deviate without asking me first):
+1. React chat UI (frontend)
+2. Go API Gateway — JWT auth, rate limiting, request routing
+3. FastAPI + LangGraph orchestrator — intent classification, slot extraction,
+   conversation state management (this is where the LLM lives)
+4. Python deterministic Policy Engine — rule-based validation, NO LLM calls here,
+   this is the safety-critical guardrail layer
+5. MCP (Model Context Protocol) server — the ONLY bridge between the AI
+   reasoning layer and the database; exposes a small set of approved "tools"
+   (e.g. waive_fee, adjust_credit_limit, replace_card)
+6. PostgreSQL — mock core banking database, ACID transactions
+7. Elasticsearch — async, immutable audit logging of every interaction
+   (user request, AI confidence score, policy decision, DB change)
+
+CRITICAL RULES FOR HOW YOU WORK WITH ME:
+- Build this INCREMENTALLY, in the phases I give you one at a time. Do not
+  jump ahead or scaffold future phases "while you're at it."
+- After each phase, STOP and give me:
+  (a) a short summary of what you built and why,
+  (b) exact commands to run it locally,
+  (c) 2-3 concrete things I should test to verify it works,
+  (d) any assumptions you made that I should confirm.
+- Do not proceed to the next phase until I explicitly say "continue" or
+  "next phase."
+- Keep each phase's code runnable and testable in isolation — I want to see
+  it working before more is added on top.
+- Use Docker/docker-compose from Phase 1 onward so all services run together
+  with one command.
+- Favor simple, readable code over clever code — I need to explain every line
+  of this in a project review.
+- Flag any place where you're simplifying vs. what a "real" implementation
+  would need (I'll note these as known limitations in my report).
+- If a step will take a long time or has a lot of moving parts, break it into
+  smaller sub-steps and check in with me between them.
+
+Confirm you understand this working style before we start Phase 1.
+```
+
+---
+
+## 📋 PHASE KICKOFF PROMPTS (send one at a time, in order)
+
+### Phase 1 — Skeleton & one thin end-to-end slice
+```
+Phase 1: Build the absolute minimal skeleton, wired end-to-end, for ONE
+intent only: "fee waiver."
+
+Scope:
+- docker-compose.yml with services: react-ui, go-gateway, fastapi-agent,
+  postgres (no Elasticsearch yet, no MCP yet, no real LLM yet)
+- Go gateway: single endpoint that accepts a POST with a JWT (use a
+  hardcoded test JWT secret for now), forwards to FastAPI
+- FastAPI: single endpoint that takes free text, uses simple keyword
+  matching (NOT an LLM yet) to detect "fee waiver" intent, and returns a
+  hardcoded mock response
+- Postgres: one table `accounts` (id, name, balance, fees_waived_this_quarter)
+  seeded with 2-3 test rows
+- React: bare-bones chat box that POSTs to the gateway and displays the response
+
+Goal of this phase: prove the wiring works, not the intelligence. No LLM
+calls yet — that's Phase 2.
+```
+
+### Phase 2 — Real LLM intent classification + slot extraction (LangGraph)
+```
+Phase 2: Replace the keyword matching in FastAPI with a real LangGraph graph
+that does intent classification and slot extraction using an LLM.
+
+Scope:
+- Add LangGraph state graph with nodes: classify_intent -> extract_slots ->
+  route_decision
+- Support 3 intents: fee_waiver, credit_limit_increase, card_replacement
+- If intent is unclear or slots are missing, route to a "clarify" response
+  instead of guessing
+- Use [ask me which: OpenAI API / Anthropic API / local Ollama model] for
+  the LLM call
+- Return structured JSON (intent, slots, confidence score) from this layer —
+  do NOT let it touch the database directly
+
+Show me example inputs/outputs for all 3 intents plus one ambiguous input.
+```
+
+### Phase 3 — Deterministic Policy Engine
+```
+Phase 3: Build the Python policy engine as a standalone, LLM-free module
+that sits between the orchestrator and execution.
+
+Scope:
+- Plain rule functions, e.g.:
+  - fee_waiver: max 1 per quarter per account
+  - credit_limit_increase: max 20% of current limit per request, account
+    must be active 6+ months (mock this field)
+  - card_replacement: always allowed if account is active
+- Takes the structured output from Phase 2 as input, returns
+  APPROVED / REJECTED / NEEDS_ESCALATION with a reason
+- Write these as clean, independently unit-testable functions (I want a
+  pytest file so I can show test coverage in my report)
+- Wire it into the FastAPI flow: after LangGraph produces structured
+  output, pass it through this engine before anything else happens
+```
+
+### Phase 4 — MCP server + real execution against Postgres
+```
+Phase 4: Add an MCP server exposing tools for the approved actions, and wire
+it so only APPROVED policy decisions can trigger execution.
+
+Scope:
+- MCP tools: waive_fee(account_id), adjust_credit_limit(account_id, new_limit),
+  replace_card(account_id)
+- Each tool executes a real ACID transaction against Postgres
+- The FastAPI orchestrator calls these tools ONLY via MCP, never with direct
+  SQL — explain to me how this isolation actually works in your implementation
+- Add a rejection/handoff path: if policy engine says REJECTED or
+  NEEDS_ESCALATION, return a clear message instead of calling any tool
+
+Show me the before/after DB state for a successful fee waiver end-to-end.
+```
+
+### Phase 5 — Async audit logging (Elasticsearch)
+```
+Phase 5: Add Elasticsearch and asynchronous audit logging.
+
+Scope:
+- Add elasticsearch service to docker-compose
+- Log every request as one immutable document: timestamp, user request text,
+  detected intent, extracted slots, AI confidence score, policy decision +
+  reason, DB change (if any), success/failure
+- Logging must be async / non-blocking — the user should get their response
+  before or without waiting on the log write
+- Add a simple way for me to view logs (Kibana, or a basic script that
+  queries and pretty-prints recent entries)
+
+Show me one full audit trail entry for a completed fee waiver.
+```
+
+### Phase 6 — Go API Gateway hardening
+```
+Phase 6: Harden the Go API Gateway with real JWT auth and rate limiting.
+
+Scope:
+- Real JWT issuing/validation flow (login endpoint that issues a token,
+  gateway validates it on every request)
+- Rate limiting per user (token bucket, in-memory is fine for now — tell me
+  if I should upgrade to Redis-backed for the report)
+- Proper error responses for expired/invalid tokens and rate-limit hits
+
+Show me example curl commands demonstrating: valid request succeeds,
+expired token rejected, rate limit triggers after N requests.
+```
+
+### Phase 7 — React UI polish + full conversation flow
+```
+Phase 7: Polish the React chat UI into something demo-ready.
+
+Scope:
+- Proper chat interface (message history, loading states, error states)
+- Handle the clarify / rejection / success response types distinctly in the UI
+- Simple login screen to get a JWT before chatting
+- Nothing fancy — this should look clean in a demo video, not be a design project
+```
+
+### Phase 8 — Test pass, docs, and demo script
+```
+Phase 8: Help me prepare for review/demo.
+
+Scope:
+- Write a README with setup instructions and architecture diagram description
+- List known limitations / simplifications made vs. a real production system
+  (I need this for my report's "future scope" section)
+- Give me a 5-minute demo script: which inputs to type, in what order, to
+  showcase intent classification, policy rejection, successful execution,
+  and audit log lookup
+```
+
+---
+
+## 💡 Tips for using this
+
+- **Don't paste all phases at once.** Send the system prompt, wait for the agent's confirmation, then send Phase 1 only.
+- After each phase's deliverable, actually run it before saying "continue" — that's the whole point of doing this progressively.
+- If a phase feels too big when you see the output, tell the agent "split this into smaller steps" — it's built into the system prompt that it should do this, but remind it if it doesn't.
+- Keep a running "known limitations" list as you go (Phase 8 collects these) — professors like seeing you're aware of what you simplified and why.

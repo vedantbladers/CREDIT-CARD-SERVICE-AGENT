@@ -1,0 +1,31 @@
+# Node
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+env/
+venv
+venv/
+.venv
+.venv/
+
+# Go
+bin/
+go-gateway/go-gateway
+
+# Docker / DB data
+postgres_data/
+
+# Environment / IDE
+.env
+.DS_Store
+.idea/
+.vscode/

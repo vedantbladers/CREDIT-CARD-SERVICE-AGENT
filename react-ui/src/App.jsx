@@ -1,0 +1,126 @@
+import React, { useState, useEffect, useRef } from 'react';
+import Header from './components/Header';
+import AuthBar from './components/AuthBar';
+import ChatMessages from './components/ChatMessages';
+import Suggestions from './components/Suggestions';
+import ChatInput from './components/ChatInput';
+import { getTestToken, sendChatMessage } from './services/api';
+import './App.css';
+
+export default function App() {
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      sender: 'agent',
+      text: 'Hello! I am your AI Credit Card Servicing Assistant (Phase 1 Skeleton). You can request a fee waiver (e.g. "Please waive my late fee").',
+      intent: 'system',
+      status: 'ready',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    },
+  ]);
+  const [inputText, setInputText] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [token, setToken] = useState('');
+  const [accountId, setAccountId] = useState('ACC-1001');
+  const [errorBanner, setErrorBanner] = useState('');
+  const messagesEndRef = useRef(null);
+
+  const fetchToken = async () => {
+    try {
+      setErrorBanner('');
+      const data = await getTestToken();
+      setToken(data.token);
+      setAccountId(data.account_id || 'ACC-1001');
+    } catch (err) {
+      console.warn('Could not auto-fetch test token:', err);
+      setErrorBanner(
+        'Go Gateway (Chi) is currently unreachable. Start your docker containers or verify port 8080.'
+      );
+    }
+  };
+
+  useEffect(() => {
+    fetchToken();
+  }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSend = async (customMessage) => {
+    const textToSend = (customMessage || inputText).trim();
+    if (!textToSend || loading) return;
+
+    setErrorBanner('');
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        sender: 'user',
+        text: textToSend,
+        time: currentTime,
+      },
+    ]);
+    setInputText('');
+    setLoading(true);
+
+    try {
+      const data = await sendChatMessage(textToSend, token, accountId);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          sender: 'agent',
+          text: data.message,
+          intent: data.intent,
+          confidence_score: data.confidence_score,
+          slots: data.slots,
+          needs_clarification: data.needs_clarification,
+          status: data.status,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } catch (err) {
+      const errMsg = err.message || 'Request failed';
+      setErrorBanner(`Gateway Error (${err.status || 500}): ${errMsg}`);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          sender: 'agent',
+          text: `[Gateway Error]: ${errMsg}`,
+          intent: 'error',
+          status: 'failed',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="app-container">
+      <Header />
+      <AuthBar
+        accountId={accountId}
+        token={token}
+        onRefreshToken={fetchToken}
+        onClearToken={() => setToken('')}
+      />
+      {errorBanner && <div className="error-banner">{errorBanner}</div>}
+      <main className="chat-window">
+        <ChatMessages messages={messages} loading={loading} messagesEndRef={messagesEndRef} />
+        <Suggestions onSelect={handleSend} disabled={loading} />
+        <ChatInput
+          value={inputText}
+          onChange={setInputText}
+          onSend={() => handleSend()}
+          disabled={loading}
+        />
+      </main>
+    </div>
+  );
+}

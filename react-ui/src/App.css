@@ -524,3 +524,121 @@
   border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
+/* Phase 4 MCP Database Execution Styles */
+.execution-card {
+  margin-top: 10px;
+  background: #091e30;
+  border: 1px solid #0284c7;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.execution-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.badge-acid {
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+}
+
+.tx-id-tag {
+  font-family: monospace;
+  font-size: 0.74rem;
+  color: #38bdf8;
+  background: #032d4e;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #0284c7;
+}
+
+.execution-tool-info {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.execution-tool-info code {
+  color: #38bdf8;
+  background: #0f172a;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.acid-status {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.db-delta-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #051929;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #1e3a5f;
+}
+
+.delta-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+}
+
+.delta-label {
+  color: #94a3b8;
+}
+
+.delta-change {
+  color: #cbd5e1;
+  font-family: monospace;
+}
+
+.delta-change strong {
+  color: #4ade80;
+}
+
+.execution-blocked {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px dashed rgba(239, 68, 68, 0.4);
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 0.82rem;
+  color: #fca5a5;
+}
+
+.badge-blocked {
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: #ef4444;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.execution-escalated {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px dashed rgba(245, 158, 11, 0.4);
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 0.82rem;
+  color: #fde047;
+}
+
+.badge-paused {
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: #f59e0b;
+  display: block;
+  margin-bottom: 4px;
+}
+
+

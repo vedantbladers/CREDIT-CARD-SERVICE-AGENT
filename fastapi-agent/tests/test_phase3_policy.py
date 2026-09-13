@@ -146,7 +146,7 @@ def test_credit_limit_increase_rejected_above_50_percent():
     assert result.decision == PolicyDecision.REJECTED
     assert "POL-CLI-004" in result.rule_name
     assert result.details["increase_percentage"] == 80.0
-    assert "exceeds maximum permissible cap of 50.0%" in result.reason
+    assert "exceeds the maximum permissible cap of 50.0%" in result.reason
 
 
 def test_credit_limit_increase_rejected_tenure_under_6_months():

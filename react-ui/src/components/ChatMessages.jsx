@@ -21,16 +21,17 @@ export default function ChatMessages({ messages, loading, messagesEndRef }) {
   return (
     <div className="messages-list">
       <div className="system-banner">
-        <strong>LangGraph Reasoning Active:</strong> Request ➔ Go Gateway (Chi) ➔
-        FastAPI State Graph (<code>classify_intent</code> ➔ <code>extract_slots</code> ➔ <code>route_decision</code>).
+        <strong>Phase 3 Deterministic Policy Engine Active:</strong> Request ➔ Go Gateway (Chi) ➔
+        FastAPI LangGraph (<code>classify_intent</code> ➔ <code>extract_slots</code> ➔ <code>route_decision</code>) ➔
+        <strong> Policy Engine (Safety Guardrails)</strong>.
         <br />
-        Inspect extracted slots, confidence scores, and clarification triggers below.
+        Inspect intent classification, extracted slots, and rule-based policy determinations (APPROVED / REJECTED / NEEDS_ESCALATION) below.
       </div>
 
       {messages.map((m) => (
         <div key={m.id} className={`message-item ${m.sender}`}>
           <div className="message-bubble">
-            {m.text}
+            <div className="message-text-content">{m.text}</div>
 
             {/* Extracted Slots Breakdown */}
             {m.slots && Object.keys(m.slots).length > 0 && (
@@ -43,6 +44,30 @@ export default function ChatMessages({ messages, loading, messagesEndRef }) {
                     </span>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Phase 3 Deterministic Policy Engine Verdict Card */}
+            {m.policy_decision && (
+              <div className={`policy-card policy-${m.policy_decision.toLowerCase()}`}>
+                <div className="policy-header">
+                  <span className={`policy-badge badge-${m.policy_decision.toLowerCase()}`}>
+                    {m.policy_decision === 'APPROVED' && '✅ POLICY APPROVED'}
+                    {m.policy_decision === 'REJECTED' && '❌ POLICY REJECTED'}
+                    {m.policy_decision === 'NEEDS_ESCALATION' && '⚠️ NEEDS ESCALATION'}
+                  </span>
+                  {m.policy_rule && <span className="policy-rule-tag">{m.policy_rule}</span>}
+                </div>
+                {m.policy_reason && <div className="policy-reason">{m.policy_reason}</div>}
+                {m.policy_details && Object.keys(m.policy_details).length > 0 && (
+                  <div className="policy-details-grid">
+                    {Object.entries(m.policy_details).map(([k, v]) => (
+                      <span key={k} className="policy-metric">
+                        <em>{k.replace(/_/g, ' ')}:</em> <strong>{String(v)}</strong>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -66,6 +91,11 @@ export default function ChatMessages({ messages, loading, messagesEndRef }) {
                 {(m.confidence_score * 100).toFixed(0)}% confidence
               </span>
             )}
+            {m.policy_decision && (
+              <span className={`policy-pill-tag tag-${m.policy_decision.toLowerCase()}`}>
+                {m.policy_decision}
+              </span>
+            )}
             {m.status && <span>({m.status})</span>}
           </div>
         </div>
@@ -74,7 +104,7 @@ export default function ChatMessages({ messages, loading, messagesEndRef }) {
       {loading && (
         <div className="message-item agent">
           <div className="message-bubble">
-            LangGraph orchestrator reasoning &amp; extracting parameters...
+            LangGraph orchestrating &amp; Deterministic Policy Engine evaluating rules...
           </div>
         </div>
       )}

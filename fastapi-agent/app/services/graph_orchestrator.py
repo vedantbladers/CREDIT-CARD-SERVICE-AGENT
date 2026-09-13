@@ -83,6 +83,15 @@ def extract_slots_node(state: AgentState) -> Dict[str, Any]:
             response = llm.invoke([SystemMessage(content=system_prompt), HumanMessage(content=message)])
             clean_content = response.content.strip().replace("```json", "").replace("```", "").strip()
             slots = json.loads(clean_content)
+            # Post-process amount with regex if dollar sign appears in text
+            if "amount" in slots or intent == "fee_waiver":
+                dollar_m = re.search(r"\$\s*([\d,]+(?:\.\d{2})?)", message)
+                if dollar_m:
+                    slots["amount"] = float(dollar_m.group(1).replace(",", ""))
+            if intent == "credit_limit_increase":
+                dollar_m = re.search(r"\$\s*([\d,]+(?:\.\d{2})?)", message)
+                if dollar_m:
+                    slots["requested_limit"] = float(dollar_m.group(1).replace(",", ""))
             return {"slots": slots}
         except Exception as e:
             logger.warning(f"LLM slot extraction failed: {e}. Falling back to deterministic extractor.")

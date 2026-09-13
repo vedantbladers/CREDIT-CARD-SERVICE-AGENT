@@ -20,6 +20,23 @@ services:
     networks:
       - platform-net
 
+  mcp-server:
+    build:
+      context: ./mcp-server
+      dockerfile: Dockerfile
+    container_name: credit_card_mcp_server
+    restart: unless-stopped
+    environment:
+      PORT: "8001"
+      DATABASE_URL: postgresql://postgres:postgrespassword@postgres:5432/banking_db
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - platform-net
+
   fastapi-agent:
     build:
       context: ./fastapi-agent
@@ -29,6 +46,7 @@ services:
       - .env
     environment:
       DATABASE_URL: postgresql://postgres:postgrespassword@postgres:5432/banking_db
+      MCP_SERVER_URL: http://mcp-server:8001
       FIREWORKS_API_KEY: ${FIREWORKS_API_KEY}
       FIREWORKS_MODEL: ${FIREWORKS_MODEL:-accounts/fireworks/models/deepseek-v4-flash-0731}
       FIREWORKS_BASE_URL: ${FIREWORKS_BASE_URL:-https://api.fireworks.ai/inference/v1}
@@ -37,6 +55,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      mcp-server:
+        condition: service_started
     networks:
       - platform-net
 

@@ -23,7 +23,7 @@ func NewChatHandler(cfg *config.Config) *ChatHandler {
 	return &ChatHandler{
 		cfg: cfg,
 		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 60 * time.Second,
 		},
 	}
 }

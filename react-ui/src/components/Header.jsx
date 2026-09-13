@@ -7,7 +7,7 @@ export default function Header() {
         <h1>Agentic AI Credit Card Servicing Platform</h1>
         <p>Academic Project — Single-Interaction Resolution &amp; Real-Time Execution</p>
       </div>
-      <span className="badge-phase">Phase 2: LangGraph Orchestrator</span>
+      <span className="badge-phase">Phase 3: Deterministic Policy Engine</span>
     </header>
   );
 }

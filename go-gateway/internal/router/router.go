@@ -33,11 +33,13 @@ func NewRouter(cfg *config.Config) *chi.Mux {
 	healthHandler := handler.NewHealthHandler()
 	tokenHandler := handler.NewTokenHandler(cfg)
 	chatHandler := handler.NewChatHandler(cfg)
+	accountsHandler := handler.NewAccountsHandler(cfg)
 
 	// Public Routes
 	r.Get("/health", healthHandler.HealthCheck)
 	r.Get("/api/token/test", tokenHandler.IssueTestToken)
 	r.Post("/api/token/test", tokenHandler.IssueTestToken)
+	r.Get("/api/accounts", accountsHandler.ForwardAccounts)
 
 	// Protected Routes (Protected by JWT)
 	r.Group(func(protected chi.Router) {

@@ -274,23 +274,110 @@ curl -s -X POST http://localhost:8080/api/chat -H "Authorization: Bearer $TOKEN"
 
 ---
 
-## 4. Simplifications & Academic Report Notes (Known Limitations)
+---
 
-| Area | Current Phase 2 Implementation | Production / Enterprise Standard | Report Rationale |
-|---|---|---|---|
-| **Intent Detection** | LangGraph State Graph with Fireworks AI DeepSeek (`deepseek-v4-flash-0731`) + deterministic fallback | Production fine-tuned LLM or hosted enterprise endpoint with RAG | Ensures zero setup blockers during local development and testing while preserving real LangGraph graph nodes and state transitions. |
-| **Clarification Loop** | Single-turn clarification prompt generated when slots or confidence are insufficient | Multi-turn conversational memory with Redis / LangGraph checkpointing | Multi-turn conversation persistence will be expanded in Phase 7. |
-| **Database Access** | Strictly prohibited in Phase 2; returns structured JSON | Isolated execution via MCP server in Phase 4 | Enforces defense-in-depth: AI reasoning models should never possess direct SQL access. |
+### Phase 3: Deterministic Policy Engine (Completed)
+
+#### Objective
+Build a standalone, LLM-free Python policy engine that sits between the LangGraph orchestrator and database execution. It enforces hard corporate banking guardrails, safety constraints, and business limits, evaluating intent and extracted slots deterministically into `APPROVED`, `REJECTED`, or `NEEDS_ESCALATION` verdicts with auditable reasoning.
+
+#### Architecture Implemented
+1. **Domain Models (`fastapi-agent/app/policy/models.py`)**:
+   - `PolicyDecision`: Enum with values `APPROVED`, `REJECTED`, `NEEDS_ESCALATION`.
+   - `AccountProfile`: Entity containing `account_number`, `name`, `balance`, `credit_limit`, `fees_waived_this_quarter`, `tenure_months`, `is_active`, `status`.
+   - `PolicyResult`: Audit model capturing `decision`, `rule_name`, `reason`, `details`, `evaluated_at`.
+2. **Deterministic Rules Engine (`fastapi-agent/app/policy/rules.py`)**:
+   - **Fee Waiver Rules**:
+     - `POL-FW-001`: Max 1 waiver per calendar quarter (`fees_waived_this_quarter >= 1` ➔ `REJECTED`).
+     - `POL-FW-002`: High-value fee escalation threshold (`amount > $150.00` ➔ `NEEDS_ESCALATION`).
+     - Account standing verification (`status != "active"` ➔ `REJECTED`).
+   - **Credit Limit Increase Rules**:
+     - `POL-CLI-001`: Increase <= 20% of current limit and tenure >= 6 months ➔ `APPROVED`.
+     - `POL-CLI-002`: Account tenure < 6 months ➔ `REJECTED`.
+     - `POL-CLI-003`: Increase between 20% and 50% ➔ `NEEDS_ESCALATION` (Manual Underwriting).
+     - `POL-CLI-004`: Increase > 50% cap ➔ `REJECTED` (Excessive Risk).
+     - Requested limit <= current limit ➔ `REJECTED`.
+   - **Card Replacement Rules**:
+     - `POL-CR-001`: Active account ➔ `APPROVED` (stolen, lost, damaged, expired).
+     - `POL-CR-002`: Fraud alert hold (`status == "fraud_alert"` ➔ `NEEDS_ESCALATION`).
+     - Suspended or inactive accounts ➔ `REJECTED`.
+3. **Account Store & Lookup (`fastapi-agent/app/policy/repository.py`)**:
+   - In-memory repository seeded with 4 cardholder test profiles:
+     - `ACC-1001` (Alice Johnson): Active, 0 waivers, 18mo tenure, $10k limit (All approvals & high-limit tests).
+     - `ACC-1002` (Bob Smith): Active, 1 waiver, 3mo tenure, $5k limit (Waiver limit and tenure rejection tests).
+     - `ACC-1003` (Charlie Brown): Suspended, 2 waivers, 24mo tenure, $15k limit (Suspended account tests).
+     - `ACC-1004` (Dana Scully): Fraud Alert, 0 waivers, 14mo tenure, $7.5k limit (Fraud escalation tests).
+4. **Pipeline Integration (`fastapi-agent/app/api/chat.py` & `schemas.py`)**:
+   - FastAPI `/chat` passes structured LangGraph output directly into `evaluate_policy()`.
+   - `ChatResponse` enriched with `policy_decision`, `policy_rule`, `policy_reason`, and `policy_details`.
+5. **Gateway Upgrades (`go-gateway/`)**:
+   - `GET|POST /api/token/test?account_id=ACC-XXXX` supports issuing JWTs for any seeded test cardholder.
+   - Forwarding timeout expanded to 60 seconds to support LLM reasoning headroom.
+   - `GET /api/accounts` proxies account profile queries to FastAPI.
+6. **React UI Updates (`react-ui/`)**:
+   - Interactive Cardholder dropdown in `AuthBar.jsx` for 1-click profile switching.
+   - Policy verdict cards rendering green `APPROVED`, red `REJECTED`, and amber `NEEDS ESCALATION` cards with rule IDs, reasons, and metric breakdown chips.
+   - Suggestions suite containing test buttons for all policy paths.
+7. **Automated Unit & Integration Test Suite (`fastapi-agent/tests/test_phase3_policy.py`)**:
+   - 16 isolated pytest cases + 6 Phase 2 regression tests = **22 passing tests in 0.2s**.
 
 ---
 
-## 5. Next Steps / Project Roadmap
+## 4. How to Verify Phase 3
+
+### 1. Automated Test Suite
+```bash
+cd fastapi-agent
+PYTHONPATH=. ../.venv/bin/pytest tests/test_phase3_policy.py tests/test_phase2.py -v
+```
+*Result: 22 passed.*
+
+### 2. Live API Testing via Go Gateway
+```bash
+# 1. Fee Waiver Approved (Alice - 0 waivers)
+TOKEN_ALICE=$(curl -s "http://localhost:8080/api/token/test?account_id=ACC-1001" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+curl -s -X POST http://localhost:8080/api/chat -H "Authorization: Bearer $TOKEN_ALICE" -H "Content-Type: application/json" \
+  -d '{"message": "Can you please waive my $95 annual fee?"}' | jq .
+
+# 2. Fee Waiver Rejected (Bob - 1 waiver already used)
+TOKEN_BOB=$(curl -s "http://localhost:8080/api/token/test?account_id=ACC-1002" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+curl -s -X POST http://localhost:8080/api/chat -H "Authorization: Bearer $TOKEN_BOB" -H "Content-Type: application/json" \
+  -d '{"message": "Please waive my late fee of $35"}' | jq .
+
+# 3. Credit Limit Increase Escalated (Alice - +40% increase)
+curl -s -X POST http://localhost:8080/api/chat -H "Authorization: Bearer $TOKEN_ALICE" -H "Content-Type: application/json" \
+  -d '{"message": "Please increase my credit limit to $14,000"}' | jq .
+
+# 4. Card Replacement Rejected (Charlie - Suspended Account)
+TOKEN_CHARLIE=$(curl -s "http://localhost:8080/api/token/test?account_id=ACC-1003" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+curl -s -X POST http://localhost:8080/api/chat -H "Authorization: Bearer $TOKEN_CHARLIE" -H "Content-Type: application/json" \
+  -d '{"message": "My card was stolen, send me a replacement"}' | jq .
+```
+
+### 3. Visual Verification Artifacts
+- Browser screenshot captured via Chrome Devtools MCP tool: `phase3_verified_website.png`
+- Shows live cardholder switching (`ACC-1002 - Bob Smith`), `❌ POLICY REJECTED` verdict card with rule `POL-FW-001:QuarterlyFeeWaiverLimit`, and previous `⚠️ NEEDS ESCALATION` verdict card with rule `POL-CLI-003:ManualUnderwritingEscalation`.
+
+---
+
+## 5. Simplifications & Academic Report Notes (Known Limitations)
+
+| Area | Current Phase 3 Implementation | Production / Enterprise Standard | Report Rationale |
+|---|---|---|---|
+| **Policy Engine** | Standalone Python module with pure deterministic rule functions | Distributed Drools, Open Policy Agent (OPA), or specialized rule engine with dynamic rule deployment | Keeps rule execution deterministic, sub-millisecond, and fully testable without introducing complex rule engine infrastructure. |
+| **Account Store** | In-memory repository with test seeds matching PostgreSQL schema | Direct query to read-replica core banking DB with transaction isolation | Direct DB access is intentionally restricted until Phase 4 MCP server isolation layer is introduced. |
+| **Audit Log** | Structured in-memory response models returned through gateway | Immutable, write-once append log in Elasticsearch | Full async Elasticsearch audit trail is planned for Phase 5. |
+
+---
+
+## 6. Next Steps / Project Roadmap
 
 - [x] **Phase 1**: Skeleton & one thin end-to-end slice (fee waiver keyword match)
 - [x] **Phase 2**: Real LLM intent classification + slot extraction (LangGraph state graph: 3 intents + clarify fallback)
-- [ ] **Phase 3**: Deterministic Python Policy Engine (unit-tested rule functions: max 1 waiver/quarter, 20% credit increase limit)
+- [x] **Phase 3**: Deterministic Python Policy Engine (unit-tested rule functions: max 1 waiver/quarter, 20% credit increase limit)
 - [ ] **Phase 4**: MCP server + ACID transaction execution against PostgreSQL
 - [ ] **Phase 5**: Async immutable audit logging via Elasticsearch
 - [ ] **Phase 6**: Go API Gateway hardening (real JWT issuance, rate limiting per cardholder)
 - [ ] **Phase 7**: React UI polish (multi-turn conversation flow, escalation/rejection cards)
 - [ ] **Phase 8**: Final testing pass, architecture documentation, and 5-minute evaluation demo script
+

@@ -1,12 +1,21 @@
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8080';
 
-export async function getTestToken() {
-  const res = await fetch(`${GATEWAY_URL}/api/token/test`);
+export async function getTestToken(accountId = 'ACC-1001') {
+  const res = await fetch(`${GATEWAY_URL}/api/token/test?account_id=${encodeURIComponent(accountId)}`);
   if (!res.ok) {
     throw new Error(`Failed to fetch test token: HTTP ${res.status}`);
   }
   return res.json();
 }
+
+export async function getAccounts() {
+  const res = await fetch(`${GATEWAY_URL}/api/accounts`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch accounts list: HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
 
 export async function sendChatMessage(message, token, accountId = 'ACC-1001') {
   const headers = {

@@ -117,10 +117,19 @@ def test_mcp_execute_waive_fee_acid_delta():
     assert abs(db_state["balance"]["after"] - (init_balance - 50.0)) < 0.01
     assert db_state["fees_waived_this_quarter"]["after"] == init_waivers + 1
 
-    audit = res["audit_record"]
-    assert audit["account_id"] == "ACC-1001"
-    assert audit["action"] == "WAIVE_FEE"
-    assert audit["status"] == "COMMITTED"
+    assert res["transaction_id"] > 0
+    assert res["account_id"] == "ACC-1001"
+    assert res["tool"] == "waive_fee"
+
+    # Verify audit transaction record directly in PostgreSQL
+    from db import get_db_connection
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM audit_transactions WHERE id = %s;", (res["transaction_id"],))
+            row = cur.fetchone()
+            assert row is not None
+            assert row["account_number"] == "ACC-1001"
+            assert row["transaction_type"] == "FEE_WAIVER"
 
 
 def test_mcp_execute_adjust_credit_limit():

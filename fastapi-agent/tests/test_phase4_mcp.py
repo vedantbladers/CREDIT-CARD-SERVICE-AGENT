@@ -19,9 +19,15 @@ from tools import (
 )
 from app.models.schemas import ChatRequest
 from app.api.chat import handle_chat
+from app.policy.repository import reset_account_store
 
 
 mcp_test_client = TestClient(mcp_app)
+
+
+@pytest.fixture(autouse=True)
+def reset_state():
+    reset_account_store()
 
 
 # =====================================================================
@@ -90,21 +96,17 @@ def test_mcp_jsonrpc_unknown_method():
 def test_mcp_execute_get_account():
     """Verify reading account state directly from PostgreSQL."""
     acc = execute_get_account("ACC-1001")
-    assert acc["status"] == "SUCCESS"
-    data = acc["data"]
-    assert data["account_number"] == "ACC-1001"
-    assert data["name"] == "Alice Johnson"
-    assert data["status"] == "active"
+    assert acc["status"] == "active"
+    assert acc["account_number"] == "ACC-1001"
+    assert acc["name"] == "Alice Johnson"
 
 
 def test_mcp_execute_waive_fee_acid_delta():
     """Verify waive_fee performs ACID update with before/after state and audit logging."""
-    # Read initial state
-    before_acc = execute_get_account("ACC-1001")["data"]
+    before_acc = execute_get_account("ACC-1001")
     init_balance = float(before_acc["balance"])
     init_waivers = int(before_acc["fees_waived_this_quarter"])
 
-    # Execute $50 waiver
     res = execute_waive_fee(account_id="ACC-1001", amount=50.0, fee_type="late_fee")
     assert res["status"] == "SUCCESS"
     assert res["acid_guarantee"] == "COMMITTED"
@@ -115,7 +117,6 @@ def test_mcp_execute_waive_fee_acid_delta():
     assert abs(db_state["balance"]["after"] - (init_balance - 50.0)) < 0.01
     assert db_state["fees_waived_this_quarter"]["after"] == init_waivers + 1
 
-    # Verify audit transaction record
     audit = res["audit_record"]
     assert audit["account_id"] == "ACC-1001"
     assert audit["action"] == "WAIVE_FEE"
@@ -130,8 +131,7 @@ def test_mcp_execute_adjust_credit_limit():
     assert res["acid_guarantee"] == "COMMITTED"
     assert res["database_state"]["credit_limit"]["after"] == 7500.0
 
-    # Read back from DB to confirm persistence
-    current = execute_get_account(acc_id)["data"]
+    current = execute_get_account(acc_id)
     assert float(current["credit_limit"]) == 7500.0
 
 
@@ -156,12 +156,19 @@ def test_mcp_nonexistent_account_fails_gracefully():
     assert "Account 'ACC-NONEXISTENT-9999' not found" in str(excinfo.value)
 
 
+def test_mcp_suspended_account_fails_gracefully():
+    """Verify attempting to waive fee on suspended account ACC-1003 is rejected."""
+    with pytest.raises(ValueError) as excinfo:
+        execute_waive_fee(account_id="ACC-1003", amount=50.0)
+    assert "not active" in str(excinfo.value)
+
+
 # =====================================================================
 # 3. JSON-RPC tools/call Endpoint Integration
 # =====================================================================
 
 def test_mcp_jsonrpc_tools_call_success():
-    """Test calling waive_fee through the standard JSON-RPC HTTP endpoint."""
+    """Test calling waive_fee on active account through JSON-RPC HTTP endpoint."""
     response = mcp_test_client.post(
         "/mcp",
         json={
@@ -170,9 +177,9 @@ def test_mcp_jsonrpc_tools_call_success():
             "params": {
                 "name": "waive_fee",
                 "arguments": {
-                    "account_id": "ACC-1003",
+                    "account_id": "ACC-1001",
                     "amount": 25.0,
-                    "fee_type": "overdraft_fee",
+                    "fee_type": "foreign_transaction_fee",
                 },
             },
             "id": 101,
@@ -196,17 +203,13 @@ def test_chat_blocks_mcp_when_policy_rejected():
     CRITICAL DEFENSE-IN-DEPTH:
     When policy engine returns REJECTED, MCP tool MUST NOT be executed.
     """
-    # ACC-1002 has 1 fee waived this quarter (limit is 1 for non-VIP)
-    # Ensure ACC-1002 has 1 fee waiver recorded
-    execute_adjust_credit_limit("ACC-1002", 5000.0)  # clean check
-    
+    # ACC-1002 has tenure 3 months (less than 6 required)
     req = ChatRequest(
-        message="Please waive my late fee of $35",
+        message="Please increase my credit limit to $6,000",
         account_id="ACC-1002",
     )
     resp = handle_chat(req)
 
-    # ACC-1002 has tenure 3 months & already has 1 waiver -> REJECTED
     assert resp.policy_decision == "REJECTED"
     assert resp.status == "policy_rejected"
     assert resp.execution_result is not None
@@ -219,9 +222,9 @@ def test_chat_blocks_mcp_when_policy_escalated():
     CRITICAL DEFENSE-IN-DEPTH:
     When policy engine returns NEEDS_ESCALATION, MCP tool MUST NOT be executed.
     """
-    # Alice requests a credit limit of $50,000 (exceeds automatic approval ceiling of $25,000)
+    # Alice requests a fee waiver of $250 (exceeds $150 threshold, requires escalation)
     req = ChatRequest(
-        message="I would like to increase my credit limit to $50,000 please",
+        message="Please waive my annual membership fee of $250",
         account_id="ACC-1001",
     )
     resp = handle_chat(req)

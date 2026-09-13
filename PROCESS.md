@@ -358,15 +358,166 @@ curl -s -X POST http://localhost:8080/api/chat -H "Authorization: Bearer $TOKEN_
 - Browser screenshot captured via Chrome Devtools MCP tool: `phase3_verified_website.png`
 - Shows live cardholder switching (`ACC-1002 - Bob Smith`), `❌ POLICY REJECTED` verdict card with rule `POL-FW-001:QuarterlyFeeWaiverLimit`, and previous `⚠️ NEEDS ESCALATION` verdict card with rule `POL-CLI-003:ManualUnderwritingEscalation`.
 
+### Phase 4: Model Context Protocol (MCP) Server & Real ACID Execution Against PostgreSQL (Completed)
+
+#### Objective
+Decouple AI orchestration from direct database credentials by introducing an isolated **Model Context Protocol (MCP)** Server. The FastAPI agent communicates exclusively with the MCP Server via standard JSON-RPC 2.0 protocol (`tools/list`, `tools/call`). In addition, enforce strict **defense-in-depth**: only requests explicitly approved by the Phase 3 Deterministic Policy Engine trigger tool execution; rejections and escalations are strictly prevented from mutating core banking state.
+
+#### Architecture & Isolation Rationale
+1. **Architectural Isolation (Zero Direct DB Access)**:
+   The FastAPI orchestrator contains no SQL queries or database credentials. All core banking mutations route through the MCP Server over JSON-RPC 2.0 (`http://localhost:8001/mcp` or `http://mcp-server:8001/mcp` in Docker).
+2. **ACID Transactional Guarantees**:
+   Every MCP tool call opens an explicit transaction (`autocommit = False`), acquires a row-level lock (`SELECT ... FOR UPDATE`), executes validation and mutations, writes an audit record into `audit_transactions`, and commits atomically (`conn.commit()`). Any exception automatically rolls back the entire transaction (`conn.rollback()`).
+3. **Defense-in-Depth Guardrail**:
+   Tool invocation is wired conditionally:
+   - `PolicyDecision.APPROVED`: Executes tool, applies database delta, records audit entry.
+   - `PolicyDecision.REJECTED`: Blocks tool execution (`status = "BLOCKED_BY_POLICY"`).
+   - `PolicyDecision.NEEDS_ESCALATION`: Blocks tool execution, routes to underwriter review queue (`status = "ESCALATED_MANUAL_REVIEW"`).
+
+#### Components Implemented
+
+1. **Database Schema Enhancements (`postgres/init.sql`)**:
+   - `accounts`: Extended with `credit_limit NUMERIC(12, 2)`, `tenure_months INT`, `status VARCHAR(20)`.
+   - `card_replacements`: Tracks physical card replacement orders (`reason`, `delivery_type`, `status`).
+   - `audit_transactions`: Immutable core ledger recording `account_number`, `transaction_type`, `amount`, `description`, `created_at`.
+2. **Standalone MCP Server (`mcp-server/`)**:
+   - `config.py`: Server configuration (port `8001`, DB connection string).
+   - `db.py`: `get_db_connection()` context manager with explicit ACID transaction rollback/commit.
+   - `tools.py`:
+     - `TOOLS_MANIFEST`: Standard MCP tool schemas for `waive_fee`, `adjust_credit_limit`, `replace_card`, and `get_account`.
+     - `execute_waive_fee`: Locks account row, decrements balance, increments quarterly fee waiver counter, inserts audit transaction.
+     - `execute_adjust_credit_limit`: Adjusts credit line atomically with audit logging.
+     - `execute_replace_card`: Dispatches card replacement with standard (5 days) or expedited (2 days) delivery.
+     - `execute_get_account`: Real-time account state retrieval.
+   - `server.py`: FastAPI server implementing JSON-RPC 2.0 protocol (`/mcp`) and REST endpoints (`/tools`, `/health`).
+   - `Dockerfile`: Containerization on port 8001.
+3. **Orchestrator Integration (`fastapi-agent/app/services/mcp_client.py`)**:
+   - `call_mcp_tool(tool_name, arguments)`: Sends JSON-RPC `tools/call` request to MCP Server.
+   - `list_mcp_tools()`: Queries registered tools manifest.
+4. **Defense-in-Depth Pipeline Integration (`fastapi-agent/app/api/chat.py`)**:
+   - Conditional tool dispatch strictly guarding database mutations.
+5. **Real-time Live Sync in Policy Engine (`fastapi-agent/app/policy/repository.py`)**:
+   - `get_account_profile()` queries live PostgreSQL via MCP `get_account` tool so policy decisions reflect real-time database state.
+6. **React UI Updates (`react-ui/`)**:
+   - `ChatMessages.jsx`: Added ACID Execution Card rendering tool name, Transaction ID (`#Tx`), balance delta (`$1450.50 ➔ $1355.50`), quarterly waiver increment, and defense-in-depth blocked/paused notices.
+   - `Header.jsx`: Updated badge to `Phase 4: MCP Server & ACID Execution`.
+   - `App.css`: Visual styling for execution badges, transaction tags, and database delta grids.
+7. **Comprehensive Test Suite (`fastapi-agent/tests/test_phase4_mcp.py`)**:
+   - 12 comprehensive unit and integration tests covering tool manifest, JSON-RPC endpoints, ACID deltas, row locking, rollback safety, and defense-in-depth policy blocks.
+   - Total test suite: **34 passing tests across Phase 2, Phase 3, and Phase 4**.
+
+---
+
+## 4. How to Verify Phase 4
+
+### 1. Automated Test Suite
+```bash
+PYTHONPATH=fastapi-agent:mcp-server .venv/bin/pytest fastapi-agent/tests/ -v
+```
+*Result: 34 passed.*
+
+### 2. End-to-End Live Execution & Database State Verification
+```bash
+# 1. Reset Alice (ACC-1001) to initial baseline
+python -c "import psycopg2; conn = psycopg2.connect('postgresql://postgres:postgrespassword@localhost:5433/banking_db'); cur = conn.cursor(); cur.execute('UPDATE accounts SET balance = 1450.50, fees_waived_this_quarter = 0 WHERE account_number = \'ACC-1001\';'); conn.commit(); conn.close()"
+
+# 2. Get JWT from Go Gateway
+TOKEN=$(curl -s "http://localhost:8080/api/token/test?account_id=ACC-1001" | jq -r .token)
+
+# 3. Request Fee Waiver via Go Gateway (Proxies to FastAPI -> Policy -> MCP -> Postgres)
+curl -s -X POST http://localhost:8080/api/chat \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Please waive my $95 annual membership fee"}' | jq .
+```
+
+#### Verified Before / After Database State Output
+
+```json
+=== [BEFORE DATABASE STATE] ===
+{
+  "account_number": "ACC-1001",
+  "name": "Alice Johnson",
+  "balance": "1450.50",
+  "credit_limit": "10000.00",
+  "fees_waived_this_quarter": 0,
+  "status": "active"
+}
+
+=== [API EXECUTION RESPONSE] ===
+{
+  "intent": "fee_waiver",
+  "confidence_score": 1.0,
+  "slots": {
+    "fee_type": "annual_fee",
+    "amount": 95.0,
+    "reason": null
+  },
+  "policy_decision": "APPROVED",
+  "policy_rule": "POL-FW-001:QuarterlyFeeWaiverLimit",
+  "execution_result": {
+    "status": "SUCCESS",
+    "tool": "waive_fee",
+    "account_id": "ACC-1001",
+    "transaction_id": 31,
+    "fee_type": "annual_fee",
+    "amount_waived": 95.0,
+    "database_state": {
+      "balance": {
+        "before": 1450.5,
+        "after": 1355.5,
+        "delta": -95.0
+      },
+      "fees_waived_this_quarter": {
+        "before": 0,
+        "after": 1
+      }
+    },
+    "executed_at": "2026-09-13T10:29:23.149715+00:00",
+    "acid_guarantee": "COMMITTED"
+  },
+  "status": "executed"
+}
+
+=== [AFTER DATABASE STATE] ===
+{
+  "account_number": "ACC-1001",
+  "name": "Alice Johnson",
+  "balance": "1355.50",
+  "credit_limit": "10000.00",
+  "fees_waived_this_quarter": 1,
+  "status": "active"
+}
+
+=== [AUDIT LEDGER TRANSACTION RECORD] ===
+{
+  "id": 31,
+  "account_number": "ACC-1001",
+  "transaction_type": "FEE_WAIVER",
+  "amount": "95.00",
+  "description": "Fee waiver of $95.00 granted for annual fee. Previous balance: $1450.50, New balance: $1355.50.",
+  "created_at": "2026-09-13 10:29:23.149715+00:00"
+}
+```
+
+### 3. Visual Verification Artifacts
+- Browser screenshot captured via Chrome Devtools MCP tool: `phase4_mcp_verified.png`
+- Verified live UI displaying:
+  - Header: `PHASE 4: MCP SERVER & ACID EXECUTION`
+  - Policy card: `✅ POLICY APPROVED (POL-FW-001:QuarterlyFeeWaiverLimit)`
+  - ACID Execution card: `⚡ MCP TOOL EXECUTED (ACID COMMITTED) Tx #32`
+  - Balance delta: `$1450.50 ➔ $1355.50`
+  - Quarterly waivers count: `0 ➔ 1`
+
 ---
 
 ## 5. Simplifications & Academic Report Notes (Known Limitations)
 
-| Area | Current Phase 3 Implementation | Production / Enterprise Standard | Report Rationale |
+| Area | Current Phase 4 Implementation | Production / Enterprise Standard | Report Rationale |
 |---|---|---|---|
-| **Policy Engine** | Standalone Python module with pure deterministic rule functions | Distributed Drools, Open Policy Agent (OPA), or specialized rule engine with dynamic rule deployment | Keeps rule execution deterministic, sub-millisecond, and fully testable without introducing complex rule engine infrastructure. |
-| **Account Store** | In-memory repository with test seeds matching PostgreSQL schema | Direct query to read-replica core banking DB with transaction isolation | Direct DB access is intentionally restricted until Phase 4 MCP server isolation layer is introduced. |
-| **Audit Log** | Structured in-memory response models returned through gateway | Immutable, write-once append log in Elasticsearch | Full async Elasticsearch audit trail is planned for Phase 5. |
+| **MCP Server Transport** | JSON-RPC 2.0 over HTTP (`POST /mcp`) | JSON-RPC over stdio / bidirectional SSE or mTLS gRPC | Standard HTTP JSON-RPC 2.0 conforms to MCP specification while providing transparent observability and simple local/container testing. |
+| **Audit Log Storage** | Synchronous relational table `audit_transactions` in PostgreSQL | Distributed append-only cluster in Elasticsearch with HMAC verifiable tamper sealing | PostgreSQL table guarantees immediate ACID atomicity in Phase 4; Elasticsearch asynchronous indexing pipeline is integrated in Phase 5. |
+| **Distributed Locking** | PostgreSQL row-level pessimistic locking (`FOR UPDATE`) | Distributed Redis/Redlock locking across clustered core banking shards | Single-database row locks provide strict ACID isolation without multi-node consensus overhead for this phase. |
 
 ---
 
@@ -375,7 +526,7 @@ curl -s -X POST http://localhost:8080/api/chat -H "Authorization: Bearer $TOKEN_
 - [x] **Phase 1**: Skeleton & one thin end-to-end slice (fee waiver keyword match)
 - [x] **Phase 2**: Real LLM intent classification + slot extraction (LangGraph state graph: 3 intents + clarify fallback)
 - [x] **Phase 3**: Deterministic Python Policy Engine (unit-tested rule functions: max 1 waiver/quarter, 20% credit increase limit)
-- [ ] **Phase 4**: MCP server + ACID transaction execution against PostgreSQL
+- [x] **Phase 4**: MCP server + ACID transaction execution against PostgreSQL
 - [ ] **Phase 5**: Async immutable audit logging via Elasticsearch
 - [ ] **Phase 6**: Go API Gateway hardening (real JWT issuance, rate limiting per cardholder)
 - [ ] **Phase 7**: React UI polish (multi-turn conversation flow, escalation/rejection cards)

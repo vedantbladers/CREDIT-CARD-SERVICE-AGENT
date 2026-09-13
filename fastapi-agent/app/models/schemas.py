@@ -43,8 +43,13 @@ class ChatResponse(BaseModel):
         default_factory=dict,
         description="Evaluation metrics, thresholds, and account risk indicators",
     )
+    # Phase 4 MCP Execution Result Field
+    execution_result: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Result of transactional execution against PostgreSQL via MCP server",
+    )
     message: str = Field(..., description="Response message for the cardholder")
-    status: str = Field(..., description="Status string: success, needs_clarification, policy_approved, policy_rejected, policy_escalated")
+    status: str = Field(..., description="Status string: success, needs_clarification, policy_approved, policy_rejected, policy_escalated, executed")
     account_id: Optional[str] = None
     timestamp: str
 

@@ -260,3 +260,55 @@ def test_evaluate_policy_dispatcher_for_seeded_accounts():
     res_unknown = evaluate_policy(intent="fee_waiver", slots={}, account_id="ACC-9999")
     assert res_unknown.decision == PolicyDecision.REJECTED
     assert "UnknownAccount" in res_unknown.rule_name
+
+
+# --- End-to-End API Integration Tests with TestClient ---
+
+def test_api_chat_policy_approved_flow():
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    client = TestClient(app)
+    response = client.post(
+        "/api/chat",
+        json={"message": "Can you please waive my $95 annual fee?", "account_id": "ACC-1001"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["intent"] == "fee_waiver"
+    assert data["policy_decision"] == "APPROVED"
+    assert "POL-FW-001" in data["policy_rule"]
+    assert data["status"] == "policy_approved"
+
+
+def test_api_chat_policy_rejected_flow():
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    client = TestClient(app)
+    response = client.post(
+        "/api/chat",
+        json={"message": "Please waive my late fee of $35", "account_id": "ACC-1002"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["intent"] == "fee_waiver"
+    assert data["policy_decision"] == "REJECTED"
+    assert "POL-FW-001" in data["policy_rule"]
+    assert data["status"] == "policy_rejected"
+
+
+def test_api_accounts_list():
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    client = TestClient(app)
+    response = client.get("/api/accounts")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["count"] >= 3
+    account_ids = [a["account_number"] for a in data["accounts"]]
+    assert "ACC-1001" in account_ids
+    assert "ACC-1002" in account_ids
+    assert "ACC-1003" in account_ids
+

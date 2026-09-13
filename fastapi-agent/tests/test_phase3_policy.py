@@ -270,7 +270,7 @@ def test_api_chat_policy_approved_flow():
 
     client = TestClient(app)
     response = client.post(
-        "/api/chat",
+        "/chat",
         json={"message": "Can you please waive my $95 annual fee?", "account_id": "ACC-1001"},
     )
     assert response.status_code == 200
@@ -287,7 +287,7 @@ def test_api_chat_policy_rejected_flow():
 
     client = TestClient(app)
     response = client.post(
-        "/api/chat",
+        "/chat",
         json={"message": "Please waive my late fee of $35", "account_id": "ACC-1002"},
     )
     assert response.status_code == 200
@@ -303,7 +303,7 @@ def test_api_accounts_list():
     from app.main import app
 
     client = TestClient(app)
-    response = client.get("/api/accounts")
+    response = client.get("/accounts")
     assert response.status_code == 200
     data = response.json()
     assert data["count"] >= 3
@@ -311,4 +311,5 @@ def test_api_accounts_list():
     assert "ACC-1001" in account_ids
     assert "ACC-1002" in account_ids
     assert "ACC-1003" in account_ids
+
 

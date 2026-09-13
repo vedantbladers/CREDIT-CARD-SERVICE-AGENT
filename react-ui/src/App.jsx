@@ -12,7 +12,7 @@ export default function App() {
     {
       id: 1,
       sender: 'agent',
-      text: 'Hello! I am your AI Credit Card Servicing Assistant (Phase 1 Skeleton). You can request a fee waiver (e.g. "Please waive my late fee").',
+      text: 'Welcome! I am your AI Credit Card Servicing Platform with Phase 3 Deterministic Policy Engine active. Requests are classified via LangGraph and enforced by deterministic bank policy rules (fee waiver frequency, credit limit increase ratios, and account standing guardrails).',
       intent: 'system',
       status: 'ready',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -25,12 +25,12 @@ export default function App() {
   const [errorBanner, setErrorBanner] = useState('');
   const messagesEndRef = useRef(null);
 
-  const fetchToken = async () => {
+  const fetchToken = async (targetAccountId = accountId) => {
     try {
       setErrorBanner('');
-      const data = await getTestToken();
+      const data = await getTestToken(targetAccountId);
       setToken(data.token);
-      setAccountId(data.account_id || 'ACC-1001');
+      setAccountId(data.account_id || targetAccountId);
     } catch (err) {
       console.warn('Could not auto-fetch test token:', err);
       setErrorBanner(
@@ -39,8 +39,13 @@ export default function App() {
     }
   };
 
+  const handleAccountChange = async (newAccountId) => {
+    setAccountId(newAccountId);
+    await fetchToken(newAccountId);
+  };
+
   useEffect(() => {
-    fetchToken();
+    fetchToken('ACC-1001');
   }, []);
 
   useEffect(() => {
@@ -78,6 +83,10 @@ export default function App() {
           confidence_score: data.confidence_score,
           slots: data.slots,
           needs_clarification: data.needs_clarification,
+          policy_decision: data.policy_decision,
+          policy_rule: data.policy_rule,
+          policy_reason: data.policy_reason,
+          policy_details: data.policy_details,
           status: data.status,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
@@ -107,6 +116,7 @@ export default function App() {
       <AuthBar
         accountId={accountId}
         token={token}
+        onSelectAccount={handleAccountChange}
         onRefreshToken={fetchToken}
         onClearToken={() => setToken('')}
       />

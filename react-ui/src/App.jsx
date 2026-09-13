@@ -12,7 +12,7 @@ export default function App() {
     {
       id: 1,
       sender: 'agent',
-      text: 'Welcome! I am your AI Credit Card Servicing Platform with Phase 3 Deterministic Policy Engine active. Requests are classified via LangGraph and enforced by deterministic bank policy rules (fee waiver frequency, credit limit increase ratios, and account standing guardrails).',
+      text: 'Welcome! I am your AI Credit Card Servicing Platform with Phase 4 MCP Server & ACID Execution active. Requests are classified via LangGraph, validated by deterministic policy rules, and executed directly against PostgreSQL via Model Context Protocol (MCP) with full ACID transaction guarantees.',
       intent: 'system',
       status: 'ready',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -87,6 +87,7 @@ export default function App() {
           policy_rule: data.policy_rule,
           policy_reason: data.policy_reason,
           policy_details: data.policy_details,
+          execution_result: data.execution_result,
           status: data.status,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },

@@ -13,12 +13,12 @@ class Settings(BaseModel):
     )
 
     # LLM Settings - Exclusively Fireworks AI (DeepSeek)
-    FIREWORKS_API_KEY: Optional[str] = os.getenv("FIREWORKS_API_KEY", "fw_BcMQKedtvL563MWiPqdvka")
+    FIREWORKS_API_KEY: Optional[str] = os.getenv("FIREWORKS_API_KEY", "")
     FIREWORKS_MODEL: str = os.getenv(
-        "FIREWORKS_MODEL", "accounts/fireworks/models/deepseek-v4-flash-0731"
+        "FIREWORKS_MODEL", ""
     )
     FIREWORKS_BASE_URL: str = os.getenv(
-        "FIREWORKS_BASE_URL", "https://api.fireworks.ai/inference/v1"
+        "FIREWORKS_BASE_URL", ""
     )
 
 

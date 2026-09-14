@@ -9,7 +9,7 @@ class Settings(BaseModel):
     APP_VERSION: str = "0.2.0"
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "postgresql://postgres:postgrespassword@postgres:5432/banking_db",
+        "",
     )
 
     # LLM Settings - Exclusively Fireworks AI (DeepSeek)

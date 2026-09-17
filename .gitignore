@@ -29,3 +29,17 @@ postgres_data/
 .DS_Store
 .idea/
 .vscode/
+
+# Project documentation & audits
+PROCESS.md
+process.md
+PROMPT
+prompt
+audits/
+
+# Screenshots & Images
+*.png
+*.jpg
+*.jpeg
+*.webp
+

@@ -51,11 +51,21 @@ func (h *ChatHandler) ForwardChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3. Inject authenticated account_id from JWT subject if omitted
-	if _, exists := payload["account_id"]; !exists {
-		if sub, ok := claims["sub"].(string); ok {
-			payload["account_id"] = sub
+	// 3. IDOR / Authorization Enforcement: Validate account_id against authenticated JWT subject
+	sub, ok := claims["sub"].(string)
+	if !ok || sub == "" {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized", "Invalid token subject claim")
+		return
+	}
+
+	if reqAccountID, exists := payload["account_id"]; exists && reqAccountID != nil {
+		reqAccStr, isStr := reqAccountID.(string)
+		if !isStr || reqAccStr != sub {
+			response.Error(w, http.StatusForbidden, "Forbidden", fmt.Sprintf("Access denied: cannot perform actions for account '%v' with credentials for '%s'", reqAccountID, sub))
+			return
 		}
+	} else {
+		payload["account_id"] = sub
 	}
 
 	forwardBytes, err := json.Marshal(payload)

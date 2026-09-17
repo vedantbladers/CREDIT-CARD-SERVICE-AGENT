@@ -20,6 +20,11 @@ func NewTokenHandler(cfg *config.Config) *TokenHandler {
 
 // IssueTestToken generates a signed mock JWT for local development and verification
 func (h *TokenHandler) IssueTestToken(w http.ResponseWriter, r *http.Request) {
+	if !h.cfg.EnableTestTokens {
+		response.Error(w, http.StatusForbidden, "Forbidden", "Test token generation is disabled in this environment")
+		return
+	}
+
 	accountID := r.URL.Query().Get("account_id")
 	if accountID == "" {
 		accountID = "ACC-1001"
@@ -31,9 +36,10 @@ func (h *TokenHandler) IssueTestToken(w http.ResponseWriter, r *http.Request) {
 		"ACC-1003": "Charlie Brown",
 		"ACC-1004": "Dana Scully",
 	}
-	userName := nameMap[accountID]
-	if userName == "" {
-		userName = "Cardholder " + accountID
+	userName, exists := nameMap[accountID]
+	if !exists {
+		response.Error(w, http.StatusBadRequest, "BadRequest", "Invalid test account ID. Permitted test accounts: ACC-1001, ACC-1002, ACC-1003, ACC-1004")
+		return
 	}
 
 	claims := jwt.MapClaims{

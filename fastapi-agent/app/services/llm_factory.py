@@ -7,25 +7,85 @@ from app.core.config import settings
 logger = logging.getLogger("orchestrator.llm")
 
 
-class FireworksResponse:
-    """Lightweight response wrapper mimicking LangChain AIMessage."""
-    def __init__(self, content: str):
+# --- Fireworks AI Client (Commented out) ---
+# class FireworksResponse:
+#     """Lightweight response wrapper mimicking LangChain AIMessage."""
+#     def __init__(self, content: str):
+#         self.content = content
+#
+#
+# class FireworksChatClient:
+#     """
+#     Native, zero-dependency Fireworks AI client for DeepSeek.
+#     Communicates directly via standard HTTPS without requiring langchain-openai.
+#     """
+#     def __init__(self, api_key: str, model: str, base_url: str):
+#         self.api_key = api_key
+#         self.model = model
+#         self.endpoint = f"{base_url.rstrip('/')}/chat/completions"
+#
+#     def invoke(self, messages: list) -> FireworksResponse:
+#         import urllib.request
+#
+#         formatted = []
+#         for m in messages:
+#             msg_type = getattr(m, "type", "")
+#             cls_name = m.__class__.__name__
+#             if msg_type == "system" or cls_name == "SystemMessage":
+#                 role = "system"
+#             elif msg_type == "human" or cls_name == "HumanMessage":
+#                 role = "user"
+#             else:
+#                 role = "user"
+#             content = getattr(m, "content", str(m))
+#             formatted.append({"role": role, "content": content})
+#
+#         payload = {
+#             "model": self.model,
+#             "messages": formatted,
+#             "max_tokens": 1024,
+#             "temperature": 0.0,
+#         }
+#         headers = {
+#             "Accept": "application/json",
+#             "Content-Type": "application/json",
+#             "Authorization": f"Bearer {self.api_key}",
+#         }
+#         req = urllib.request.Request(
+#             self.endpoint,
+#             data=json.dumps(payload).encode("utf-8"),
+#             headers=headers,
+#             method="POST",
+#         )
+#         with urllib.request.urlopen(req, timeout=15) as resp:
+#             data = json.loads(resp.read().decode("utf-8"))
+#             content = data["choices"][0]["message"]["content"]
+#             return FireworksResponse(content=content)
+
+
+class OpenRouterResponse:
+    """Lightweight response wrapper holding content and reasoning details."""
+    def __init__(self, content: str, reasoning_details: Any = None):
         self.content = content
+        self.reasoning_details = reasoning_details
 
 
-class FireworksChatClient:
+class OpenRouterChatClient:
     """
-    Native, zero-dependency Fireworks AI client for DeepSeek.
-    Communicates directly via standard HTTPS without requiring langchain-openai.
+    OpenRouter client using the official OpenAI SDK with reasoning support.
+    Reads model and base URL strictly from environment settings.
     """
     def __init__(self, api_key: str, model: str, base_url: str):
-        self.api_key = api_key
+        from openai import OpenAI
+        if not model or not base_url:
+            raise ValueError("OPENROUTER_MODEL and OPENROUTER_BASE_URL must be configured in .env")
+        self.client = OpenAI(
+            base_url=base_url,
+            api_key=api_key,
+        )
         self.model = model
-        self.endpoint = f"{base_url.rstrip('/')}/chat/completions"
 
-    def invoke(self, messages: list) -> FireworksResponse:
-        import urllib.request
-
+    def invoke(self, messages: list) -> OpenRouterResponse:
         formatted = []
         for m in messages:
             msg_type = getattr(m, "type", "")
@@ -34,47 +94,52 @@ class FireworksChatClient:
                 role = "system"
             elif msg_type == "human" or cls_name == "HumanMessage":
                 role = "user"
+            elif msg_type == "ai" or cls_name == "AIMessage":
+                role = "assistant"
             else:
                 role = "user"
-            content = getattr(m, "content", str(m))
-            formatted.append({"role": role, "content": content})
 
-        payload = {
-            "model": self.model,
-            "messages": formatted,
-            "max_tokens": 1024,
-            "temperature": 0.0,
-        }
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
-        req = urllib.request.Request(
-            self.endpoint,
-            data=json.dumps(payload).encode("utf-8"),
-            headers=headers,
-            method="POST",
+            content = getattr(m, "content", str(m))
+            entry: Dict[str, Any] = {"role": role, "content": content}
+            if hasattr(m, "reasoning_details") and m.reasoning_details:
+                entry["reasoning_details"] = m.reasoning_details
+            formatted.append(entry)
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=formatted,
+            extra_body={"reasoning": {"enabled": True}},
         )
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            content = data["choices"][0]["message"]["content"]
-            return FireworksResponse(content=content)
+        msg = response.choices[0].message
+        content = msg.content or ""
+        reasoning_details = getattr(msg, "reasoning_details", None)
+        return OpenRouterResponse(content=content, reasoning_details=reasoning_details)
 
 
 def get_configured_llm():
     """
-    Returns an instantiated FireworksChatClient configured for Fireworks AI DeepSeek.
+    Returns an instantiated OpenRouterChatClient configured from environment settings.
     """
-    if settings.FIREWORKS_API_KEY:
+    # --- Fireworks AI (Commented out) ---
+    # if settings.FIREWORKS_API_KEY:
+    #     try:
+    #         return FireworksChatClient(
+    #             api_key=settings.FIREWORKS_API_KEY,
+    #             model=settings.FIREWORKS_MODEL,
+    #             base_url=settings.FIREWORKS_BASE_URL,
+    #         )
+    #     except Exception as e:
+    #         logger.warning(f"Failed to initialize Fireworks AI client: {e}")
+
+    if settings.OPENROUTER_API_KEY:
         try:
-            return FireworksChatClient(
-                api_key=settings.FIREWORKS_API_KEY,
-                model=settings.FIREWORKS_MODEL,
-                base_url=settings.FIREWORKS_BASE_URL,
+            return OpenRouterChatClient(
+                api_key=settings.OPENROUTER_API_KEY,
+                model=settings.OPENROUTER_MODEL,
+                base_url=settings.OPENROUTER_BASE_URL,
             )
         except Exception as e:
-            logger.warning(f"Failed to initialize Fireworks AI client: {e}")
+            logger.warning(f"Failed to initialize OpenRouter client: {e}")
 
     logger.info("Using native deterministic NLP inference engine.")
     return None

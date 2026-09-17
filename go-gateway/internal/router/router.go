@@ -13,7 +13,10 @@ import (
 func NewRouter(cfg *config.Config) *chi.Mux {
 	r := chi.NewRouter()
 
-	// Global Middlewares
+	// Security & Defense Middlewares
+	r.Use(appMiddleware.SecurityHeadersMiddleware)
+
+	// Standard Middlewares
 	r.Use(chiMiddleware.RequestID)
 	r.Use(chiMiddleware.RealIP)
 	r.Use(chiMiddleware.Logger)
@@ -21,11 +24,11 @@ func NewRouter(cfg *config.Config) *chi.Mux {
 
 	// Cross-Origin Resource Sharing (CORS)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
+		AllowedOrigins:   cfg.AllowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
+		AllowCredentials: true,
 		MaxAge:           300,
 	}))
 

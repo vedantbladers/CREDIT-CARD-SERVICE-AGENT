@@ -97,8 +97,8 @@ def handle_chat(request: ChatRequest) -> ChatResponse:
                     "replace_card",
                     {
                         "account_id": account_id,
-                        "reason": slots.get("reason", "stolen"),
-                        "delivery_type": slots.get("delivery_type", "standard"),
+                        "reason": slots.get("reason") or "stolen",
+                        "delivery_type": slots.get("delivery_type") or "standard",
                     },
                 )
                 if execution_result.get("status") == "SUCCESS":

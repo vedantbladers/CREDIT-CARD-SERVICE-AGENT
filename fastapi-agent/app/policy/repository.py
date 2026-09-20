@@ -129,3 +129,23 @@ def reset_account_store() -> None:
             status="fraud_alert",
         ),
     }
+
+    # Reset PostgreSQL database state if available to ensure complete test hermeticity
+    try:
+        import os
+        import psycopg2
+        db_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgrespassword@localhost:5433/banking_db")
+        if "postgres:5432" in db_url:
+            db_url = "postgresql://postgres:postgrespassword@localhost:5433/banking_db"
+        conn = psycopg2.connect(db_url, connect_timeout=1)
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE accounts SET balance = 1450.50, credit_limit = 10000.00, fees_waived_this_quarter = 0, status = 'active' WHERE account_number = 'ACC-1001';
+                UPDATE accounts SET balance = 320.00, credit_limit = 5000.00, fees_waived_this_quarter = 1, status = 'active' WHERE account_number = 'ACC-1002';
+                UPDATE accounts SET balance = 5820.75, credit_limit = 15000.00, fees_waived_this_quarter = 2, status = 'suspended' WHERE account_number = 'ACC-1003';
+                UPDATE accounts SET balance = 890.00, credit_limit = 7500.00, fees_waived_this_quarter = 0, status = 'fraud_alert' WHERE account_number = 'ACC-1004';
+            """)
+            conn.commit()
+        conn.close()
+    except Exception:
+        pass

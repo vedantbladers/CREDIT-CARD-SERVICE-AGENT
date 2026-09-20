@@ -226,6 +226,9 @@ def execute_replace_card(
     """
     Registers card replacement order and audit log in an ACID transaction.
     """
+    reason = reason or "stolen"
+    delivery_type = delivery_type or "standard"
+
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(

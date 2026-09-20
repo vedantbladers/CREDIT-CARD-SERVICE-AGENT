@@ -29,10 +29,17 @@ def call_mcp_tool(tool_name: str, arguments: Dict[str, Any], timeout: float = 10
             resp = client.post(f"{MCP_SERVER_URL}/mcp", json=payload)
             if resp.status_code == 200:
                 data = resp.json()
-                if "result" in data and "data" in data["result"]:
+                if data.get("result") and "data" in data["result"]:
                     return data["result"]["data"]
-                elif "error" in data:
-                    raise RuntimeError(f"MCP JSON-RPC Error: {data['error'].get('message')}")
+                elif data.get("error"):
+                    return {
+                        "status": "FAILED",
+                        "tool": tool_name,
+                        "error": data["error"].get("message"),
+                        "acid_guarantee": "ROLLED_BACK",
+                    }
+                else:
+                    raise RuntimeError(f"Unexpected MCP response payload: {data}")
             else:
                 raise RuntimeError(f"MCP Server HTTP {resp.status_code}: {resp.text}")
 

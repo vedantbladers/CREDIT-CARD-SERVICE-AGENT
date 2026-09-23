@@ -1,0 +1,1096 @@
+/* ==========================================================================
+   HDFC Bank NetBanking Portal Stylesheet
+   Signature Palette: Primary #004c8f, Deep Navy #002d62, Accent Red #ed1c24
+   ========================================================================== */
+
+:root {
+  --hdfc-blue: #004c8f;
+  --hdfc-dark-blue: #002d62;
+  --hdfc-navy: #0a2240;
+  --hdfc-red: #ed1c24;
+  --hdfc-red-hover: #c41219;
+  --hdfc-gold: #c59b27;
+  --hdfc-bg: #f4f6fa;
+  --hdfc-card-bg: #ffffff;
+  --hdfc-border: #e2e8f0;
+  --hdfc-border-light: #edf2f7;
+  --hdfc-text-main: #1a202c;
+  --hdfc-text-muted: #64748b;
+  --hdfc-text-light: #94a3b8;
+  --hdfc-green: #10b981;
+  --hdfc-shadow-sm: 0 1px 3px rgba(0, 45, 98, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --hdfc-shadow-md: 0 4px 12px rgba(0, 45, 98, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --hdfc-shadow-lg: 0 10px 25px rgba(0, 45, 98, 0.12), 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.hdfc-portal-root {
+  min-height: 100vh;
+  background-color: var(--hdfc-bg);
+  color: var(--hdfc-text-main);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --------------------------------------------------------------------------
+   Top Utility & Security Bar
+   -------------------------------------------------------------------------- */
+.hdfc-top-utility-bar {
+  background-color: #00234b;
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  padding: 6px 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hdfc-security-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #93c5fd;
+  font-weight: 500;
+}
+
+.hdfc-top-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.hdfc-top-links span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hdfc-top-links .sep {
+  opacity: 0.4;
+}
+
+/* --------------------------------------------------------------------------
+   Main HDFC Brand Header
+   -------------------------------------------------------------------------- */
+.hdfc-brand-header {
+  background: linear-gradient(135deg, var(--hdfc-dark-blue) 0%, var(--hdfc-blue) 100%);
+  color: #ffffff;
+  padding: 0.85rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 45, 98, 0.15);
+}
+
+.hdfc-brand-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+/* HDFC Authentic Geometric Logo Box */
+.hdfc-emblem-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.hdfc-logo-graphic {
+  width: 38px;
+  height: 38px;
+  background-color: #ffffff;
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.hdfc-logo-squares {
+  width: 26px;
+  height: 26px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hdfc-blue-bracket {
+  position: absolute;
+  inset: 0;
+  border: 4px solid var(--hdfc-blue);
+  border-radius: 2px;
+}
+
+.hdfc-red-center {
+  width: 10px;
+  height: 10px;
+  background-color: var(--hdfc-red);
+  position: relative;
+  z-index: 2;
+}
+
+.hdfc-brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.hdfc-bank-name {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  line-height: 1.1;
+  color: #ffffff;
+}
+
+.hdfc-netbanking-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: #93c5fd;
+  text-transform: uppercase;
+}
+
+/* Header Right - User Profile & Copilot Trigger */
+.hdfc-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.hdfc-persona-dropdown-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.hdfc-persona-label {
+  font-size: 0.72rem;
+  color: #bfdbfe;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.hdfc-persona-select {
+  background: transparent;
+  color: #ffffff;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+.hdfc-persona-select option {
+  background-color: #002d62;
+  color: #ffffff;
+}
+
+.hdfc-customer-badge {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+}
+
+.hdfc-customer-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.hdfc-customer-id {
+  font-size: 0.72rem;
+  color: #bfdbfe;
+}
+
+/* Featured Header Action Button to Open Apex Copilot */
+.btn-open-copilot-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+}
+
+.btn-open-copilot-header:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.5);
+  background: linear-gradient(135deg, #4338ca 0%, #2563eb 100%);
+}
+
+.btn-open-copilot-header .sparkle-icon {
+  color: #fde047;
+  animation: pulseSparkle 2s infinite ease-in-out;
+}
+
+@keyframes pulseSparkle {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+.btn-logout-portal {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-logout-portal:hover {
+  background: var(--hdfc-red);
+}
+
+/* --------------------------------------------------------------------------
+   NetBanking Navigation Tabs Bar
+   -------------------------------------------------------------------------- */
+.hdfc-nav-bar {
+  background-color: #ffffff;
+  border-bottom: 2px solid var(--hdfc-blue);
+  box-shadow: var(--hdfc-shadow-sm);
+  padding: 0 2rem;
+}
+
+.hdfc-nav-list {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 2px;
+  overflow-x: auto;
+}
+
+.hdfc-nav-item {
+  padding: 0.85rem 1.15rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.hdfc-nav-item:hover {
+  color: var(--hdfc-blue);
+  background-color: #f8fafc;
+}
+
+.hdfc-nav-item.active {
+  color: var(--hdfc-blue);
+  border-bottom-color: var(--hdfc-red);
+  background-color: #f1f5f9;
+  font-weight: 700;
+}
+
+.nav-offer-tag {
+  background-color: var(--hdfc-red);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+
+/* --------------------------------------------------------------------------
+   Dashboard Main Container
+   -------------------------------------------------------------------------- */
+.hdfc-main-content {
+  flex: 1;
+  max-width: 1360px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem 2rem 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Welcome & Alerts Banner */
+.hdfc-welcome-banner {
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 1.15rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--hdfc-border);
+  box-shadow: var(--hdfc-shadow-sm);
+}
+
+.welcome-text-col h2 {
+  font-size: 1.18rem;
+  font-weight: 700;
+  color: var(--hdfc-dark-blue);
+  margin: 0 0 4px 0;
+}
+
+.welcome-text-col p {
+  font-size: 0.8rem;
+  color: var(--hdfc-text-muted);
+  margin: 0;
+}
+
+.welcome-info-pills {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.info-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f1f5f9;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.info-pill.kyc-verified {
+  background-color: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+/* --------------------------------------------------------------------------
+   FEATURED COPILOT SPOTLIGHT BANNER
+   Direct callout inside the bank portal to experience the autonomous agent!
+   -------------------------------------------------------------------------- */
+.hdfc-copilot-spotlight {
+  background: linear-gradient(135deg, #09172e 0%, #1e1b4b 50%, #0f172a 100%);
+  border-radius: 14px;
+  padding: 1.5rem 2rem;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.hdfc-copilot-spotlight::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.spotlight-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  z-index: 1;
+}
+
+.spotlight-icon-gem {
+  width: 54px;
+  height: 54px;
+  background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.spotlight-text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.spotlight-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spotlight-badge {
+  background-color: rgba(99, 102, 241, 0.25);
+  color: #c7d2fe;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+
+.spotlight-tech-tag {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.spotlight-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 2px 0 0 0;
+  letter-spacing: -0.2px;
+  color: #ffffff;
+}
+
+.spotlight-desc {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  margin: 0;
+  max-width: 650px;
+  line-height: 1.45;
+}
+
+.spotlight-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  z-index: 1;
+}
+
+.btn-launch-spotlight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  color: #ffffff;
+  border: none;
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.4);
+}
+
+.btn-launch-spotlight:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.6);
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+}
+
+.spotlight-guarantee-note {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   Two-Column Cards Layout: Accounts & Credit Cards
+   -------------------------------------------------------------------------- */
+.hdfc-cards-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .hdfc-cards-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hdfc-card-tile {
+  background-color: var(--hdfc-card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--hdfc-border);
+  box-shadow: var(--hdfc-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.hdfc-card-tile:hover {
+  box-shadow: var(--hdfc-shadow-md);
+}
+
+.tile-header {
+  padding: 1rem 1.4rem;
+  background-color: #f8fafc;
+  border-bottom: 1px solid var(--hdfc-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tile-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tile-title {
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--hdfc-dark-blue);
+  margin: 0;
+}
+
+.tile-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.tile-badge.savings {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.tile-badge.credit {
+  background-color: #fef2f2;
+  color: var(--hdfc-red);
+}
+
+.tile-body {
+  padding: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  flex: 1;
+}
+
+/* Account Info Group */
+.account-number-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  color: var(--hdfc-text-muted);
+}
+
+.acc-type-text {
+  font-weight: 600;
+  color: var(--hdfc-text-main);
+}
+
+.acc-number-digits {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-eye-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--hdfc-text-muted);
+  padding: 2px;
+}
+
+.balance-metric-display {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.balance-sub-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--hdfc-text-muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.balance-large-val {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--hdfc-dark-blue);
+  letter-spacing: -0.5px;
+}
+
+.balance-limits-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 10px 12px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid var(--hdfc-border-light);
+}
+
+.limit-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.limit-lbl {
+  font-size: 0.7rem;
+  color: var(--hdfc-text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.limit-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.limit-val.text-green {
+  color: #059669;
+}
+
+/* Card Visual Strip for Credit Card Tile */
+.credit-card-preview-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-strip-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card-strip-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #f8fafc;
+}
+
+.card-strip-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88rem;
+  color: #cbd5e1;
+}
+
+.card-strip-badge {
+  background-color: var(--hdfc-red);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+/* Tile Footer Actions */
+.tile-actions-footer {
+  padding: 0.85rem 1.4rem;
+  border-top: 1px solid var(--hdfc-border);
+  background-color: #fbfcfe;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tile-btn-link {
+  background: none;
+  border: none;
+  color: var(--hdfc-blue);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.tile-btn-link:hover {
+  color: var(--hdfc-red);
+  background-color: #f1f5f9;
+}
+
+.tile-btn-primary {
+  background-color: var(--hdfc-blue);
+  color: #ffffff;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s;
+}
+
+.tile-btn-primary:hover {
+  background-color: var(--hdfc-dark-blue);
+}
+
+/* --------------------------------------------------------------------------
+   Quick Services Grid
+   -------------------------------------------------------------------------- */
+.hdfc-quick-actions-bar {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--hdfc-border);
+  box-shadow: var(--hdfc-shadow-sm);
+}
+
+.section-headline-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-headline {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--hdfc-dark-blue);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quick-services-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .quick-services-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.quick-service-btn {
+  background-color: #f8fafc;
+  border: 1px solid var(--hdfc-border-light);
+  border-radius: 8px;
+  padding: 14px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #334155;
+  text-align: center;
+}
+
+.quick-service-btn:hover {
+  background-color: #ffffff;
+  border-color: var(--hdfc-blue);
+  color: var(--hdfc-blue);
+  transform: translateY(-2px);
+  box-shadow: var(--hdfc-shadow-sm);
+}
+
+.quick-icon-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background-color: #e0f2fe;
+  color: var(--hdfc-blue);
+  display: grid;
+  place-items: center;
+}
+
+.quick-service-btn.special-ai {
+  background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
+  border-color: #818cf8;
+  color: #3730a3;
+}
+
+.quick-service-btn.special-ai .quick-icon-wrap {
+  background: #6366f1;
+  color: #ffffff;
+}
+
+.quick-btn-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* --------------------------------------------------------------------------
+   HDFC Statement / Recent Transactions Table
+   -------------------------------------------------------------------------- */
+.hdfc-statement-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid var(--hdfc-border);
+  box-shadow: var(--hdfc-shadow-sm);
+  overflow: hidden;
+}
+
+.statement-header {
+  padding: 1.1rem 1.5rem;
+  background-color: #f8fafc;
+  border-bottom: 1px solid var(--hdfc-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.statement-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statement-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--hdfc-dark-blue);
+  margin: 0;
+}
+
+.statement-filters {
+  display: flex;
+  gap: 6px;
+}
+
+.statement-filter-pill {
+  background: #ffffff;
+  border: 1px solid var(--hdfc-border);
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--hdfc-text-muted);
+  cursor: pointer;
+}
+
+.statement-filter-pill.active {
+  background-color: var(--hdfc-blue);
+  color: #ffffff;
+  border-color: var(--hdfc-blue);
+}
+
+.statement-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.statement-table th {
+  background-color: #f8fafc;
+  color: var(--hdfc-text-muted);
+  font-weight: 600;
+  text-align: left;
+  padding: 10px 1.5rem;
+  border-bottom: 1px solid var(--hdfc-border);
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.5px;
+}
+
+.statement-table td {
+  padding: 12px 1.5rem;
+  border-bottom: 1px solid var(--hdfc-border-light);
+  color: #1e293b;
+}
+
+.statement-table tr:hover td {
+  background-color: #f8fafc;
+}
+
+.tx-merchant-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.tx-merchant-name {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.tx-merchant-ref {
+  font-size: 0.7rem;
+  color: var(--hdfc-text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.tx-amount-debit {
+  color: #b91c1c;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.tx-amount-credit {
+  color: #059669;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.btn-dispute-ai-table {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-dispute-ai-table:hover {
+  background-color: #fecaca;
+  color: #991b1b;
+  transform: translateY(-1px);
+}
+
+.badge-disputed-table {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #fef3c7;
+  color: #92400e;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   Floating EVA / Apex AI Copilot Capsule Widget
+   -------------------------------------------------------------------------- */
+.hdfc-floating-copilot {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 999;
+}
+
+.btn-floating-copilot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  color: #ffffff;
+  border: 2px solid #818cf8;
+  padding: 12px 20px;
+  border-radius: 30px;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(49, 46, 129, 0.45);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-floating-copilot:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 0 16px 40px rgba(79, 70, 229, 0.6);
+  border-color: #a5b4fc;
+}
+
+.floating-icon-wrap {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.floating-pulse {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid #a5b4fc;
+  animation: floatingPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes floatingPing {
+  75%, 100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.floating-text-group {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.floating-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  color: #ffffff;
+}
+
+.floating-subtitle {
+  font-size: 0.7rem;
+  color: #c7d2fe;
+}
+
+/* --------------------------------------------------------------------------
+   HDFC NetBanking Footer
+   -------------------------------------------------------------------------- */
+.hdfc-footer {
+  background-color: #ffffff;
+  border-top: 1px solid var(--hdfc-border);
+  padding: 1.5rem 2rem;
+  color: var(--hdfc-text-muted);
+  font-size: 0.74rem;
+  margin-top: auto;
+}
+
+.hdfc-footer-inner {
+  max-width: 1360px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-disclaimer {
+  max-width: 800px;
+  line-height: 1.5;
+}
+
+.footer-security-links {
+  display: flex;
+  gap: 16px;
+  font-weight: 600;
+  color: var(--hdfc-blue);
+}

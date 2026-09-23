@@ -158,15 +158,21 @@ def run_deterministic_classification(message: str) -> Tuple[str, float]:
         if word in text and not any(k in text for k in ["fee", "limit", "card", "replace"]):
             return "unclear", 0.35
 
+    # 0. Transaction Dispute / Fraud checks
+    dispute_signals = ["dispute", "unauthorized", "fraud", "unrecognized", "chargeback", "didn't make", "did not make"]
+    has_dispute = any(s in text for s in dispute_signals)
+    if has_dispute:
+        return "dispute_charge", 0.98
+
     # 1. Fee Waiver checks
-    fee_signals = ["fee", "charge", "penalty", "annual fee", "late fee", "interest charge"]
+    fee_signals = ["fee", "penalty", "annual fee", "late fee", "interest charge", "membership fee"]
     waiver_signals = ["waive", "waiver", "refund", "remove", "reversal", "reimburse", "drop"]
     has_fee = any(s in text for s in fee_signals)
     has_waiver = any(s in text for s in waiver_signals)
 
     if has_fee and has_waiver:
         return "fee_waiver", 0.95
-    if has_fee and not has_waiver and not any(k in text for k in ["limit", "card", "replace"]):
+    if has_fee and not has_waiver and not any(k in text for k in ["limit", "card", "replace", "dispute"]):
         # Vague about fees -> lower confidence
         return "fee_waiver", 0.60
 
@@ -265,5 +271,24 @@ def run_deterministic_slot_extraction(intent: str, message: str) -> Dict[str, An
             slots["delivery_type"] = "expedited"
         else:
             slots["delivery_type"] = "standard"
+
+    elif intent == "dispute_charge":
+        # Extract dollar amount
+        dollar_m = re.search(r"\$?\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?)", message)
+        amt = None
+        if dollar_m:
+            try:
+                amt = float(dollar_m.group(1).replace(",", "").replace("$", ""))
+            except ValueError:
+                amt = None
+        slots["amount"] = amt
+
+        # Extract merchant if mentioned (e.g. from Delta Air Lines, from Electronics Depot NY)
+        merchant = None
+        merchant_m = re.search(r"(?:from|at)\s+([A-Za-z0-9\s&]+?)(?:\.|$|,|under|please|that)", message, re.IGNORECASE)
+        if merchant_m:
+            merchant = merchant_m.group(1).strip()
+        slots["merchant"] = merchant or "Unspecified Merchant"
+        slots["reason"] = "unauthorized transaction"
 
     return slots

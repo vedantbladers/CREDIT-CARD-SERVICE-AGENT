@@ -6,6 +6,7 @@ from app.policy.rules import (
     evaluate_card_replacement,
     evaluate_credit_limit_increase,
     evaluate_fee_waiver,
+    evaluate_dispute_charge,
 )
 
 logger = logging.getLogger("orchestrator.policy")
@@ -42,6 +43,9 @@ def evaluate_policy(
 
     elif intent == "card_replacement":
         return evaluate_card_replacement(profile, slots)
+
+    elif intent == "dispute_charge":
+        return evaluate_dispute_charge(profile, slots)
 
     else:
         return PolicyResult(

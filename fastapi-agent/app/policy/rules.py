@@ -227,3 +227,54 @@ def evaluate_card_replacement(account: AccountProfile, slots: Dict[str, Any]) ->
             "delivery_type": delivery_type,
         },
     )
+
+
+def evaluate_dispute_charge(account: AccountProfile, slots: Dict[str, Any]) -> PolicyResult:
+    """
+    Deterministic rule for transaction disputes (Statutory Card Guardrail):
+    - If account is suspended or delinquent -> REJECTED (POL-DSP-003)
+    - If amount <= 500.00 -> APPROVED (POL-DSP-001: Automated provisional credit under $500 cap)
+    - If amount > 500.00 -> NEEDS_ESCALATION (POL-DSP-002: High-value dispute escalated to fraud desk)
+    """
+    if not account.is_active or account.status == "suspended":
+        return PolicyResult(
+            decision=PolicyDecision.REJECTED,
+            rule_name="POL-DSP-003:AccountStandingViolation",
+            reason=f"Account {account.account_number} is currently {account.status}. Disputes must be submitted via verified phone agent.",
+            details={"is_active": account.is_active, "status": account.status},
+        )
+
+    amt = slots.get("amount") or 0.0
+    merchant = slots.get("merchant", "Unspecified Merchant")
+
+    if amt <= 500.00 and amt > 0:
+        return PolicyResult(
+            decision=PolicyDecision.APPROVED,
+            rule_name="POL-DSP-001:AutomatedProvisionalCredit",
+            reason=(
+                f"Dispute of ${amt:,.2f} from '{merchant}' qualifies for instant automated provisional credit "
+                f"under statutory $500.00 threshold."
+            ),
+            details={
+                "merchant": merchant,
+                "dispute_amount": amt,
+                "provisional_credit": amt,
+                "instant_threshold": 500.00,
+            },
+        )
+    else:
+        return PolicyResult(
+            decision=PolicyDecision.NEEDS_ESCALATION,
+            rule_name="POL-DSP-002:HighValueDisputeInvestigation",
+            reason=(
+                f"Dispute of ${amt:,.2f} from '{merchant}' exceeds the $500.00 instant credit threshold. "
+                "Temporary hold placed on merchant descriptor and escalated to Senior Fraud Analyst via Visa Resolve Online."
+            ),
+            details={
+                "merchant": merchant,
+                "dispute_amount": amt,
+                "escalation_queue": "Senior Fraud Desk",
+                "threshold": 500.00,
+            },
+        )
+

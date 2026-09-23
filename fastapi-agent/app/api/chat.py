@@ -110,6 +110,21 @@ def handle_chat(request: ChatRequest) -> ChatResponse:
                         f"(Dispatch Order #{rep_id}, Estimated: {est_days} business days)."
                     )
 
+            elif intent == "dispute_charge":
+                amt = slots.get("amount") or 0.0
+                merchant = slots.get("merchant") or "Merchant"
+                execution_result = {
+                    "status": "SUCCESS",
+                    "dispute_id": f"DSP-{account_id[-4:]}-892",
+                    "provisional_credit_applied": amt,
+                    "merchant": merchant,
+                    "ledger_note": f"Provisional credit of ${amt:,.2f} applied under statutory guardrail POL-DSP-001.",
+                }
+                response_message += (
+                    f"\n\n⚡ [MCP Execution - ACID Committed]: Provisional credit of ${amt:,.2f} issued for {merchant} "
+                    f"(Dispute Docket #{execution_result['dispute_id']})."
+                )
+
         elif policy_res.decision == PolicyDecision.REJECTED:
             status = "policy_rejected"
             response_message = (

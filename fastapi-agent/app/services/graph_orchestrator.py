@@ -180,6 +180,19 @@ def route_decision_node(state: AgentState) -> Dict[str, Any]:
             "status": "success",
         }
 
+    if intent == "dispute_charge":
+        amount_str = f" of ${slots['amount']:,.2f}" if slots.get("amount") else ""
+        merchant_str = f" from {slots['merchant']}" if slots.get("merchant") else ""
+        return {
+            "needs_clarification": False,
+            "clarification_prompt": None,
+            "response_message": (
+                f"Transaction dispute initiated for charge{amount_str}{merchant_str}. "
+                "Request routed to statutory cardholder dispute engine under zero-liability rules."
+            ),
+            "status": "success",
+        }
+
     # Fallback
     return {
         "needs_clarification": True,
